@@ -1,10 +1,20 @@
 coverage:
   paths:
-    - coverage.xml
+    - coverage.out
 codeToTestRatio:
   code:
     - "**/*.go"
+    - "!**/*_test.go"
   test:
-    - "**/*test.go"
+    - "**/*_test.go"
 testExecutionTime:
   if: true
+comment:
+  if: is_pull_request
+report:
+  if: is_default_branch
+  datastores:
+    - artifact://${GITHUB_REPOSITORY}
+diff:
+  datastores:
+    - artifact://${GITHUB_REPOSITORY}
