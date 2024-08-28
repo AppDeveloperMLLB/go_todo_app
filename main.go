@@ -24,7 +24,6 @@ func main() {
 	if err := run(context.Background(), l); err != nil {
 		log.Printf("failed to run: %v", err)
 	}
-
 }
 
 func run(ctx context.Context, l net.Listener) error {
