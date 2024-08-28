@@ -1,0 +1,10 @@
+coverage:
+  paths:
+    - coverage.xml
+codeToTestRatio:
+  code:
+    - "**/*.go"
+  test:
+    - "**/*test.go"
+testExecutionTime:
+  if: true
