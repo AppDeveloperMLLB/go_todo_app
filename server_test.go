@@ -19,7 +19,7 @@ func TestServer_Run(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	eg, ctx := errgroup.WithContext(ctx)
 	mux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, %s", r.URL.Path[1:])
+		fmt.Fprintf(w, "Hello, World %s", r.URL.Path[1:])
 	})
 	eg.Go(func() error {
 		s := NewServer(l, mux)

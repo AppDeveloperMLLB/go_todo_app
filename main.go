@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"example.com/sample/go_todo_app/config"
-	"golang.org/x/sync/errgroup"
 )
 
 func main() {
@@ -29,30 +27,11 @@ func run(ctx context.Context) error {
 	}
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
 	if err != nil {
-		log.Fatalf("failed to listen port %d: %v", cfg.Port, err)
+		return fmt.Errorf("failed to listen port %d: %w", cfg.Port, err)
 	}
 	url := fmt.Sprintf("http://%s", l.Addr().String())
 	log.Printf("start with: %v", url)
-	s := &http.Server{
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintf(w, "Hello, World %s", r.URL.Path[1:])
-		}),
-	}
-
-	eg, ctx := errgroup.WithContext(ctx)
-	eg.Go(func() error {
-		if err := s.Serve(l); err != nil && err != http.ErrServerClosed {
-			log.Printf("failed to close: %v", err)
-			return err
-		}
-
-		return nil
-	})
-
-	<-ctx.Done()
-	if err := s.Shutdown(context.Background()); err != nil {
-		log.Printf("failed to close: %v", err)
-	}
-
-	return eg.Wait()
+	mux := NewMux()
+	s := NewServer(l, mux)
+	return s.Run(ctx)
 }
