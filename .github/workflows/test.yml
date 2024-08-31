@@ -23,8 +23,8 @@ jobs:
       - uses: actions/checkout@v3
       - run: |
           curl -LO https://github.com/sqldef/sqldef/releases/download/v0.17.17/psqldef_linux_arm64.tar.gz
-          unzip psqldef_linux_arm64.zip
-          rm psqldef_linux_arm64.zip
+          tar -xzf psqldef_linux_arm64.tar.gz
+          rm psqldef_linux_arm64.tar.gz
           PGPASSWORD=todo ./psqldef -h 127.0.0.1 -U todo todo < ./_tool/postgresql/schema.sql
       - run: go test ./... -coverprofile=coverage.out
       - name: report coverage
