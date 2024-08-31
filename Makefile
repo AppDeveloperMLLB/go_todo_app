@@ -33,3 +33,15 @@ lint: ## Run the linter
 
 lint-fix: ## Run the linter and fix the issues
 	golangci-lint run --fix ./...
+
+migrate:
+	PGPASSWORD=todo ./psqldef -h 127.0.0.1 -U todo todo < ./_tool/postgresql/schema.sql
+
+migrate-dry-run:
+	PGPASSWORD=todo ./psqldef -h 127.0.0.1 -U todo todo --dry-run < ./_tool/postgresql/schema.sql
+
+drop-table:
+	PGPASSWORD=todo ./psqldef -h 127.0.0.1 -U todo todo -f ./_tool/postgresql/cleanup.sql
+
+export-db:
+	PGPASSWORD=todo ./psqldef -h 127.0.0.1 -U todo todo --export
