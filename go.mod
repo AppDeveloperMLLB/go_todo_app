@@ -9,12 +9,15 @@ require (
 
 require (
 	github.com/caarlos0/env/v6 v6.10.1
+	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-playground/validator/v10 v10.22.0
+	github.com/jmoiron/sqlx v1.4.0
+	github.com/lib/pq v1.10.9
 )
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
-	github.com/go-chi/chi/v5 v5.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
