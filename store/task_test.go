@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"log"
 	"testing"
 
 	"example.com/sample/go_todo_app/clock"
@@ -41,9 +40,11 @@ func TestRepository_ListTasks(t *testing.T) {
 
 func prepareTasks(ctx context.Context, t *testing.T, con Execer, queryer Queryer) entity.Tasks {
 	t.Helper()
-	log.Println("DELETE")
 	if _, err := con.ExecContext(ctx, "DELETE FROM tasks;"); err != nil {
 		t.Logf("failed to delete tasks: %v", err)
+	}
+	if _, err := con.ExecContext(ctx, "TRUNCATE TABLE tasks RESTART IDENTITY;"); err != nil {
+		t.Logf("failed to restart sequence: %v", err)
 	}
 
 	c := clock.FixedClocker{}
@@ -65,7 +66,6 @@ func prepareTasks(ctx context.Context, t *testing.T, con Execer, queryer Queryer
 		},
 	}
 
-	log.Println("INSERT")
 	var id int
 	err := queryer.QueryRowxContext(
 		ctx,
@@ -80,7 +80,7 @@ func prepareTasks(ctx context.Context, t *testing.T, con Execer, queryer Queryer
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Println("INSERTED")
+
 	wants[0].ID = entity.TaskID(id)
 	wants[1].ID = entity.TaskID(id + 1)
 	wants[2].ID = entity.TaskID(id + 2)
@@ -105,12 +105,15 @@ func TestRepository_AddTask(t *testing.T) {
 	}
 
 	t.Cleanup(func() { db.Close() })
-	mock.ExpectExec(
+	mock.ExpectQuery(
 		`
 		INSERT INTO tasks \(title, status, created_at\)
 		VALUES \(\$1, \$2, \$3\)
+		returning id
 		`,
-	).WithArgs(okTask.Title, okTask.Status, okTask.CreatedAt).WillReturnResult(sqlmock.NewResult(wantID, 1))
+	).WithArgs(okTask.Title, okTask.Status, okTask.CreatedAt).WillReturnRows(
+		sqlmock.NewRows([]string{"id"}).AddRow(wantID),
+	)
 
 	xdb := sqlx.NewDb(db, "postgres")
 	r := &Repository{Clocker: c}

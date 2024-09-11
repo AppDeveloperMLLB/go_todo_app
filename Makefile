@@ -45,3 +45,6 @@ drop-table:
 
 export-db:
 	PGPASSWORD=todo ./psqldef -h 127.0.0.1 -U todo todo --export
+
+generate:
+	go generate ./...
