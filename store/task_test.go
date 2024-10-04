@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"testing"
+	"time"
 
 	"example.com/sample/go_todo_app/clock"
 	"example.com/sample/go_todo_app/entity"
@@ -28,7 +29,12 @@ func TestRepository_ListTasks(t *testing.T) {
 	wants := prepareTasks(ctx, t, tx, tx)
 
 	sut := &Repository{}
-	tx.QueryRowContext(ctx, "SELECT NOW();").Scan(&sut.Clocker)
+	var now time.Time
+	err = tx.QueryRowContext(ctx, "SELECT NOW();").Scan(&now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sut.Clocker = clock.CreateFixedClocker(now)
 	gots, err := sut.ListTasks(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
@@ -47,7 +53,7 @@ func prepareTasks(ctx context.Context, t *testing.T, con Execer, queryer Queryer
 		t.Logf("failed to restart sequence: %v", err)
 	}
 
-	c := clock.FixedClocker{}
+	c := clock.NewFixedClocker()
 	wants := entity.Tasks{
 		{
 			Title:     "want task 1",
@@ -91,7 +97,7 @@ func TestRepository_AddTask(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	c := clock.FixedClocker{}
+	c := clock.NewFixedClocker()
 	var wantID int64 = 20
 	okTask := &entity.Task{
 		Title:     "ok task",

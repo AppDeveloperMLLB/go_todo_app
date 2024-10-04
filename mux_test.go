@@ -19,6 +19,9 @@ func TestNewMux(t *testing.T) {
 	}
 	sut, cleanup, err := NewMux(context.Background(), cfg)
 	defer cleanup()
+	if err != nil {
+		t.Fatal(err)
+	}
 	sut.ServeHTTP(w, r)
 	resp := w.Result()
 	t.Cleanup(func() { _ = resp.Body.Close() })
