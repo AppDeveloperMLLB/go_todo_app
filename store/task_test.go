@@ -30,7 +30,7 @@ func TestRepository_ListTasks(t *testing.T) {
 
 	sut := &Repository{}
 	var now time.Time
-	err = tx.QueryRowContext(ctx, "SELECT NOW();").Scan(now)
+	err = tx.QueryRowContext(ctx, "SELECT NOW();").Scan(&now)
 	if err != nil {
 		t.Fatal(err)
 	}
