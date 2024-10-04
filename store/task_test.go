@@ -28,7 +28,10 @@ func TestRepository_ListTasks(t *testing.T) {
 	wants := prepareTasks(ctx, t, tx, tx)
 
 	sut := &Repository{}
-	tx.QueryRowContext(ctx, "SELECT NOW();").Scan(&sut.Clocker)
+	err = tx.QueryRowContext(ctx, "SELECT NOW();").Scan(&sut.Clocker)
+	if err != nil {
+		t.Fatal(err)
+	}
 	gots, err := sut.ListTasks(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
