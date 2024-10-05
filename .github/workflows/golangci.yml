@@ -9,9 +9,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Create dir
+        run: mkdir -p auth/cert
+      - name: Create secret key
+        run: |
+          echo "${{ secrets.SECRET_KEY }}" > auth/cert/secret.pem
+      - name: Create public key
+        run: |
+          echo "${{ secrets.PUBLIC_KEY }}" > auth/cert/public.pem
       - name: Remove Go mod directory manually
         run: rm -rf ~/go/pkg/mod
-
       - name: Clear Go mod cache
         run: go clean -mod cache
       - name: golangci-lint
