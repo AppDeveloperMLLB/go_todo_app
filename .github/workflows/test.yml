@@ -43,7 +43,7 @@ jobs:
         run: mkdir -p auth/cert
       - name: Create secret key
         run: |
-          echo "${{ secrets.PRIVATE_KEY }}" > auth/cert/secret.pem
+          echo "${{ secrets.SECRET_KEY }}" > auth/cert/secret.pem
       - name: Create public key
         run: |
           echo "${{ secrets.PUBLIC_KEY }}" > auth/cert/public.pem
