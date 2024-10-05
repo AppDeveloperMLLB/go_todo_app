@@ -9,6 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Remove Go mod directory manually
+        run: rm -rf ~/go/pkg/mod
+
+      - name: Clear Go mod cache
+        run: go clean -mod cache
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
