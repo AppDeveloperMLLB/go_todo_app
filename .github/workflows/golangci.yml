@@ -9,6 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ">=1.18"
+
+      # Goモジュールのキャッシュをクリーン
       - name: Clear Go mod cache
         run: go clean -modcache
       - name: golangci-lint
