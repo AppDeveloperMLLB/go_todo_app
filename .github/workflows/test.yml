@@ -44,7 +44,7 @@ jobs:
       - name: Create secret key
         run: |
           echo "${{ secrets.PRIVATE_KEY }}" > auth/cert/secret.pem
-      - name: Create secret key
+      - name: Create public key
         run: |
           echo "${{ secrets.PUBLIC_KEY }}" > auth/cert/public.pem
       - run: go test ./... -coverprofile=coverage.out
