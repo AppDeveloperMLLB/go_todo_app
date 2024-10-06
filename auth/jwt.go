@@ -4,6 +4,8 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"log"
+	"net/http"
 	"time"
 
 	"example.com/sample/go_todo_app/clock"
@@ -46,15 +48,6 @@ func (j *JWTer) GenerateToken(ctx context.Context, u entity.User) ([]byte, error
 		return nil, err
 	}
 
-	// アルゴリズムを確認
-	alg, ok := j.PrivateKey.Get(jwk.AlgorithmKey)
-	if !ok || alg == "" {
-		// アルゴリズムが設定されていない場合、明示的に設定
-		if err := j.PrivateKey.Set(jwk.AlgorithmKey, jwa.RS256); err != nil {
-			return nil, fmt.Errorf("failed to set algorithm: %w", err)
-		}
-	}
-
 	if err := j.Store.Save(ctx, tok.JwtID(), u.ID); err != nil {
 		return nil, err
 	}
@@ -72,7 +65,7 @@ type Store interface {
 	Load(ctx context.Context, key string) (entity.UserID, error)
 }
 
-func NewJWTer(s Store) (*JWTer, error) {
+func NewJWTer(s Store, c clock.Clocker) (*JWTer, error) {
 	j := &JWTer{
 		Store: s,
 	}
@@ -87,7 +80,7 @@ func NewJWTer(s Store) (*JWTer, error) {
 	}
 	j.PrivateKey = privKey
 	j.PublicKey = pubKey
-	j.Clocker = clock.RealClocker{}
+	j.Clocker = c
 	return j, nil
 }
 
@@ -96,5 +89,114 @@ func parse(rawKey []byte) (jwk.Key, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = key.Set(jwk.AlgorithmKey, jwa.RS256)
+	if err != nil {
+		return nil, err
+	}
+	// alg := key.Algorithm()
+	// algKey, ok := key.Get(jwk.AlgorithmKey)
+	// if !ok || alg == "" {
+	// 	// アルゴリズムが設定されていない場合、明示的に設定
+	// 	if err := j.PrivateKey.Set(jwk.AlgorithmKey, jwa.RS256); err != nil {
+	// 		return nil, fmt.Errorf("failed to set algorithm: %w", err)
+	// 	}
+	// }
+	// if !ok || alg == "" {
+	// 	// アルゴリズムが設定されていない場合、明示的に設定
+	// 	if err := key.Set(jwk.AlgorithmKey, jwa.RS256); err != nil {
+	// 		t.Fatal(err)
+	// 	}
+	// }
+	// // アルゴリズムを jwk.Key から取得
+	// keyAlg := pkey.Algorithm()
+
+	// // 取得したアルゴリズムを使用して署名
+	// signed, err := jwt.Sign(want, jwt.WithKey(keyAlg, pkey))
+	// if err != nil {
+	// 	t.Fatalf("failed to sign token: %v", err)
+	// }
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
 	return key, nil
+}
+
+func (j *JWTer) GetToken(ctx context.Context, r *http.Request) (jwt.Token, error) {
+	// アルゴリズムが設定されていない場合は設定する
+	if _, ok := j.PublicKey.Get(jwk.AlgorithmKey); !ok {
+		if err := j.PublicKey.Set(jwk.AlgorithmKey, jwa.RS256); err != nil {
+			return nil, err
+		}
+	}
+
+	// 公開鍵からアルゴリズムを取得
+	alg := j.PublicKey.Algorithm()
+
+	token, err := jwt.ParseRequest(
+		r,
+		jwt.WithKey(alg, j.PublicKey),
+		jwt.WithValidate(false),
+	)
+	log.Println(token)
+	if err != nil {
+		return nil, err
+	}
+	if err := jwt.Validate(token, jwt.WithClock(j.Clocker)); err != nil {
+		return nil, fmt.Errorf("GetToken: failed to validate token: %w", err)
+	}
+	if _, err := j.Store.Load(ctx, token.JwtID()); err != nil {
+		return nil, fmt.Errorf("GetToken: failed to load token: %w", err)
+	}
+	return token, nil
+}
+
+type userIDKey struct{}
+type roleKey struct{}
+
+func SetUserID(ctx context.Context, uid entity.UserID) context.Context {
+	return context.WithValue(ctx, userIDKey{}, uid)
+}
+
+func GetUserID(ctx context.Context) (entity.UserID, bool) {
+	uid, ok := ctx.Value(userIDKey{}).(entity.UserID)
+	return uid, ok
+}
+
+func SetRole(ctx context.Context, tok jwt.Token) context.Context {
+	get, ok := tok.Get(RoleKey)
+	if !ok {
+		return context.WithValue(ctx, roleKey{}, "")
+	}
+
+	return context.WithValue(ctx, roleKey{}, get)
+}
+
+func GetRole(ctx context.Context) (string, bool) {
+	role, ok := ctx.Value(roleKey{}).(string)
+	return role, ok
+}
+
+func (j *JWTer) FillContext(r *http.Request) (*http.Request, error) {
+	token, err := j.GetToken(r.Context(), r)
+	if err != nil {
+		return nil, err
+	}
+
+	uid, err := j.Store.Load(r.Context(), token.JwtID())
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := SetUserID(r.Context(), uid)
+	ctx = SetRole(ctx, token)
+	clone := r.Clone(ctx)
+	return clone, nil
+}
+
+func IsAdmin(ctx context.Context) bool {
+	role, ok := GetRole(ctx)
+	if !ok {
+		return false
+	}
+	return role == "admin"
 }

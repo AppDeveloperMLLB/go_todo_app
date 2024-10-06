@@ -11,7 +11,7 @@ type Clocker interface {
 type RealClocker struct{}
 
 func (r RealClocker) Now() time.Time {
-	return time.Now()
+	return time.Now().UTC()
 }
 
 type FixedClocker struct {
